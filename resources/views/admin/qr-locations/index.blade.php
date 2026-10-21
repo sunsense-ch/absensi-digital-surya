@@ -25,17 +25,7 @@
     <div class="card">
         <div class="toolbar">
             <p style="font-size:12.5px;color:var(--muted);margin:0;">{{ $qrLocations->total() }} lokasi terdaftar</p>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <form method="GET" action="{{ route('admin.qr-locations.index') }}" style="display:flex;gap:8px;">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama / kode" class="search">
-                    <select name="status" onchange="this.form.submit()" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;background:var(--surface-white);">
-                        <option value="">Semua Status</option>
-                        <option value="aktif" @selected(request('status') === 'aktif')>Aktif</option>
-                        <option value="nonaktif" @selected(request('status') === 'nonaktif')>Nonaktif</option>
-                    </select>
-                </form>
-                <a href="{{ route('admin.qr-locations.create') }}" class="btn btn-primary">+ Tambah Lokasi</a>
-            </div>
+            <a href="{{ route('admin.qr-locations.create') }}" class="btn btn-primary">+ Tambah Lokasi</a>
         </div>
 
         <table>
@@ -53,6 +43,8 @@
             <tbody>
                 @forelse($qrLocations as $location)
                     @php
+                        // date di-cast jadi Carbon oleh model QrToken, jadi harus dibandingkan
+                        // sebagai string tanggal, bukan langsung firstWhere('date', ...)
                         $todayToken = $location->tokens->first(
                             fn($t) => $t->date->format('Y-m-d') === today()->toDateString()
                         );

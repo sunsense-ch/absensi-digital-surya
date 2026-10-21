@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('nis')->unique();
             $table->string('full_name');
             $table->foreignId('class_id')->constrained()->cascadeOnDelete();
-            $table->timestamps();
         });
     }
 

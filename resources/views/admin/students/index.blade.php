@@ -8,18 +8,7 @@
     <div class="card">
         <div class="toolbar">
             <p style="font-size:12.5px;color:var(--muted);margin:0;">{{ $students->total() }} siswa terdaftar</p>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <form method="GET" action="{{ route('admin.students.index') }}" style="display:flex;gap:8px;">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama / NIS" class="search">
-                    <select name="class_id" onchange="this.form.submit()" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;background:var(--surface-white);">
-                        <option value="">Semua Kelas</option>
-                        @foreach($classes as $class)
-                            <option value="{{ $class->id }}" @selected(request('class_id') == $class->id)>{{ $class->class_name }}</option>
-                        @endforeach
-                    </select>
-                </form>
-                <a href="{{ route('admin.students.create') }}" class="btn btn-primary">+ Tambah Siswa</a>
-            </div>
+            <a href="{{ route('admin.students.create') }}" class="btn btn-primary">+ Tambah Siswa</a>
         </div>
 
         <table>

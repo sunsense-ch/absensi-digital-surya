@@ -8,12 +8,7 @@
     <div class="card">
         <div class="toolbar">
             <p style="font-size:12.5px;color:var(--muted);margin:0;">{{ $classes->total() }} kelas terdaftar</p>
-            <div style="display:flex;gap:8px;align-items:center;">
-                <form method="GET" action="{{ route('admin.classes.index') }}">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama kelas / jurusan" class="search">
-                </form>
-                <a href="{{ route('admin.classes.create') }}" class="btn btn-primary">+ Tambah Kelas</a>
-            </div>
+            <a href="{{ route('admin.classes.create') }}" class="btn btn-primary">+ Tambah Kelas</a>
         </div>
 
         <table>

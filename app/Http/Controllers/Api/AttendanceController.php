@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\GeoHelper;
 use App\Http\Controllers\Controller;
 use App\Models\QrToken;
 use Illuminate\Http\Request;
@@ -12,11 +13,10 @@ class AttendanceController extends Controller
     {
         $request->validate([
             'qr_token' => ['required', 'string'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
         ]);
 
-        // $request->user() didapat dari Bearer Token (auth:sanctum),
-        // BUKAN dari data yang dikirim mobile -> siswa tidak bisa mengaku-ngaku
-        // jadi siswa lain dengan mengirim student_id palsu.
         $user = $request->user();
         $student = $user->student;
 
@@ -27,8 +27,6 @@ class AttendanceController extends Controller
             ], 422);
         }
 
-        // Semua syarat token digabung dalam satu query:
-        // ada, aktif, untuk hari ini, dan masih dalam jam berlaku
         $qrToken = QrToken::with('location')
             ->where('token', $request->qr_token)
             ->where('is_active', true)
@@ -44,26 +42,59 @@ class AttendanceController extends Controller
             ], 422);
         }
 
-        // PENTING: pada tahap ini BELUM menyimpan absensi.
-        // Endpoint ini baru memvalidasi + mengidentifikasi siswa & lokasi.
-        // Penyimpanan absensi sungguhan akan dibuat setelah aturan GPS
-        // (Pertemuan 8) dan aturan waktu masuk/pulang siap.
+        $location = $qrToken->location;
+
+        if (!$location || !$location->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lokasi QR tidak aktif.',
+            ], 422);
+        }
+
+        // Hitung jarak siswa dari titik lokasi QR pakai Haversine
+        $distance = GeoHelper::distance(
+            (float) $request->latitude,
+            (float) $request->longitude,
+            (float) $location->latitude,
+            (float) $location->longitude
+        );
+
+        // QR benar saja tidak cukup -- siswa juga harus berada dalam radius
+        if ($distance > $location->radius) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda berada di luar radius lokasi absensi.',
+                'data' => [
+                    'distance' => round($distance, 2),
+                    'radius' => $location->radius,
+                    'location' => $location->name,
+                ],
+            ], 422);
+        }
+
+        // PENTING: pada tahap ini BELUM menyimpan absensi ke database.
+        // Baru memvalidasi QR + lokasi + GPS. Penyimpanan sungguhan
+        // (dengan aturan status hadir/terlambat, absen pagi/pulang)
+        // akan dibangun di tahap berikutnya (Pertemuan 11).
         return response()->json([
             'success' => true,
-            'message' => 'QR Code valid.',
+            'message' => 'QR dan lokasi valid.',
             'data' => [
                 'student' => [
                     'id' => $student->id,
                     'nis' => $student->nis,
                     'name' => $student->full_name,
                 ],
-                'qr' => [
-                    'token_id' => $qrToken->id,
-                    'location' => $qrToken->location->name,
-                    'location_code' => $qrToken->location->code,
-                    'date' => $qrToken->date,
-                    'valid_from' => $qrToken->valid_from,
-                    'valid_until' => $qrToken->valid_until,
+                'location' => [
+                    'name' => $location->name,
+                    'latitude' => $location->latitude,
+                    'longitude' => $location->longitude,
+                    'radius' => $location->radius,
+                ],
+                'gps' => [
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'distance' => round($distance, 2),
                 ],
             ],
         ]);
